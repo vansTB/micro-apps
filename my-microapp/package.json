@@ -1,0 +1,19 @@
+{
+  "name": "my-microapp",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter ./apps/* dev",
+    "build": "pnpm -r --filter ./apps/* build",
+    "dev:main-app": "pnpm --filter main-app dev",
+    "dev:react-child-app": "pnpm --filter react-child-app dev",
+    "dev:vue-child-app": "pnpm --filter vue-child-app dev",
+    "build:main-app": "pnpm --filter main-app build",
+    "build:react-child-app": "pnpm --filter react-child-app build",
+    "build:vue-child-app": "pnpm --filter vue-child-app build"
+  },
+  "devDependencies": {
+    "pnpm": "^8.0.0"
+  }
+}
