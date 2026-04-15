@@ -51,21 +51,21 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo mkdir -p ${{ env.DEPLOY_PATH }}/main-app"
-          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./microApps/main-app/dist/* \
+          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./apps/main-app/dist/* \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/main-app/
 
       - name: Deploy react-child-app
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo mkdir -p ${{ env.DEPLOY_PATH }}/react-child-app"
-          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./microApps/react-child-app/dist/* \
+          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./apps/react-child-app/dist/* \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/react-child-app/
 
       - name: Deploy vue-child-app
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo mkdir -p ${{ env.DEPLOY_PATH }}/vue-child-app"
-          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./microApps/vue-child-app/dist/* \
+          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./apps/vue-child-app/dist/* \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/vue-child-app/
 
       - name: Reload nginx
