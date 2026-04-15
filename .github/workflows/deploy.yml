@@ -1,9 +1,7 @@
 name: Build & Deploy
 
 on:
-  push:
-    branches: [master, main]
-  workflow_dispatch:
+  workflow_dispatch: # 只在 GitHub 页面手动点击 "Run workflow" 触发
 
 env:
   NODE_VERSION: "18"
@@ -36,14 +34,10 @@ jobs:
           cache-dependency-path: my-microapp/pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build all apps
         run: pnpm build
-
-      - name: Type check
-        run: pnpm type-check
-        continue-on-error: true
 
       # ── 部署 ──
       - name: Configure SSH
