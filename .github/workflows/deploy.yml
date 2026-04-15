@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy_all:
-        description: "Force deploy all apps (忽略变更检测，全部构建部署)"
+        description: "Force deploy all apps"
         type: boolean
         default: false
 
