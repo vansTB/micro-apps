@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # 只在 GitHub 页面手动点击 "Run workflow" 触发
 
 env:
-  NODE_VERSION: "18"
+  NODE_VERSION: "20"
   PNPM_VERSION: "8"
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
-      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/usr/share/nginx/html' }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/www/wwwroot/projects/microApps' }}
 
     steps:
       - uses: actions/checkout@v4
