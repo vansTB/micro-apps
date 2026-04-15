@@ -1,185 +1,51 @@
-name: Deploy Micro Apps
+name: Build & Deploy
 
 on:
   push:
-    branches: [master]
+    branches: [master, main]
+  workflow_dispatch:
 
 env:
-  # ---------- 服务器配置（在 GitHub Settings → Secrets 中设置） ----------
-  # DEPLOY_HOST:       服务器 IP
-  # DEPLOY_USER:       SSH 用户名
-  # DEPLOY_SSH_KEY:    SSH 私钥
-  # DEPLOY_PORT:       SSH 端口（默认 22）
-  # DEPLOY_PATH:       部署根目录（如 /usr/share/nginx/html）
   NODE_VERSION: "18"
   PNPM_VERSION: "8"
 
 jobs:
-  # ============================================================
-  # 第一步：检测哪些子项目有变更
-  # ============================================================
-  detect-changes:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    outputs:
-      main-app: ${{ steps.filter.outputs.main-app }}
-      react-child-app: ${{ steps.filter.outputs.react-child-app }}
-      vue-child-app: ${{ steps.filter.outputs.vue-child-app }}
-      shared: ${{ steps.filter.outputs.shared }}
-    steps:
-      - uses: actions/checkout@v4
+    defaults:
+      run:
+        working-directory: my-microapp
 
-      - name: Detect changed paths
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            main-app:
-              - 'apps/main-app/**'
-              - 'packages/shared/**'
-            react-child-app:
-              - 'apps/react-child-app/**'
-              - 'packages/shared/**'
-            vue-child-app:
-              - 'apps/vue-child-app/**'
-              - 'packages/shared/**'
-            shared:
-              - 'packages/shared/**'
-
-  # ============================================================
-  # 第二步：分别构建有变更的子项目（并行执行）
-  # ============================================================
-  build-main-app:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.main-app == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build main-app
-        run: pnpm --filter main-app build
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: main-app-dist
-          path: apps/main-app/dist/
-          retention-days: 1
-
-  build-react-child-app:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.react-child-app == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build react-child-app
-        run: pnpm --filter react-child-app build
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: react-child-app-dist
-          path: apps/react-child-app/dist/
-          retention-days: 1
-
-  build-vue-child-app:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.vue-child-app == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build vue-child-app
-        run: pnpm --filter vue-child-app build
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: vue-child-app-dist
-          path: apps/vue-child-app/dist/
-          retention-days: 1
-
-  # ============================================================
-  # 第三步：部署到服务器
-  # ============================================================
-  deploy:
-    needs: [detect-changes, build-main-app, build-react-child-app, build-vue-child-app]
-    # 只要任意一个构建执行了（哪怕只有一个），就进入部署
-    if: |
-      always() &&
-      needs.build-main-app.result != 'failure' &&
-      needs.build-react-child-app.result != 'failure' &&
-      needs.build-vue-child-app.result != 'failure' &&
-      (
-        needs.build-main-app.result == 'success' ||
-        needs.build-react-child-app.result == 'success' ||
-        needs.build-vue-child-app.result == 'success'
-      )
-    runs-on: ubuntu-latest
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
-      # 部署根目录，按你服务器的实际路径修改
       DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/usr/share/nginx/html' }}
+
     steps:
-      - name: Download main-app artifact
-        if: needs.build-main-app.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: main-app-dist
-          path: ./dist/main-app/
+      - uses: actions/checkout@v4
 
-      - name: Download react-child-app artifact
-        if: needs.build-react-child-app.result == 'success'
-        uses: actions/download-artifact@v4
+      - uses: pnpm/action-setup@v4
         with:
-          name: react-child-app-dist
-          path: ./dist/react-child-app/
+          version: ${{ env.PNPM_VERSION }}
 
-      - name: Download vue-child-app artifact
-        if: needs.build-vue-child-app.result == 'success'
-        uses: actions/download-artifact@v4
+      - uses: actions/setup-node@v4
         with:
-          name: vue-child-app-dist
-          path: ./dist/vue-child-app/
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: my-microapp/pnpm-lock.yaml
 
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all apps
+        run: pnpm build
+
+      - name: Type check
+        run: pnpm type-check
+        continue-on-error: true
+
+      # ── 部署 ──
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
@@ -188,30 +54,24 @@ jobs:
           ssh-keyscan -p ${{ env.DEPLOY_PORT }} -H ${{ env.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy main-app
-        if: needs.build-main-app.result == 'success'
         run: |
-          echo "Deploying main-app..."
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo mkdir -p ${{ env.DEPLOY_PATH }}/main-app"
-          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./dist/main-app/* \
+          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./microApps/main-app/dist/* \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/main-app/
 
       - name: Deploy react-child-app
-        if: needs.build-react-child-app.result == 'success'
         run: |
-          echo "Deploying react-child-app..."
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo mkdir -p ${{ env.DEPLOY_PATH }}/react-child-app"
-          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./dist/react-child-app/* \
+          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./microApps/react-child-app/dist/* \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/react-child-app/
 
       - name: Deploy vue-child-app
-        if: needs.build-vue-child-app.result == 'success'
         run: |
-          echo "Deploying vue-child-app..."
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo mkdir -p ${{ env.DEPLOY_PATH }}/vue-child-app"
-          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./dist/vue-child-app/* \
+          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./microApps/vue-child-app/dist/* \
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/vue-child-app/
 
       - name: Reload nginx
@@ -220,6 +80,6 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo nginx -s reload"
 
-      - name: Cleanup SSH key
+      - name: Cleanup
         if: always()
         run: rm -f ~/.ssh/deploy_key
