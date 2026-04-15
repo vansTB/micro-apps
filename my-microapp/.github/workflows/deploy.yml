@@ -3,15 +3,15 @@ name: Build & Deploy
 on:
   push:
     branches: [master]
-
+  workflow_dispatch: # 👈 手动运行
 env:
   NODE_VERSION: "18"
   PNPM_VERSION: "8"
 
   # ── 自建 Remote Cache 配置 ──
   # Turborepo 通过这两个环境变量连接你的腾讯云缓存服务
-  TURBO_API: ${{ secrets.TURBO_API }}          # 例如 http://你的服务器IP:4000
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}       # 缓存服务的 CACHE_TOKEN
+  TURBO_API: ${{ secrets.TURBO_API }} # 例如 http://你的服务器IP:4000
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }} # 缓存服务的 CACHE_TOKEN
 
 jobs:
   build-and-deploy:
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # turbo 需要完整 git 历史做增量判断
+          fetch-depth: 0 # turbo 需要完整 git 历史做增量判断
 
       - uses: pnpm/action-setup@v4
         with:
