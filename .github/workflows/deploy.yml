@@ -1,14 +1,63 @@
 name: Build & Deploy
 
 on:
-  workflow_dispatch: # 只在 GitHub 页面手动点击 "Run workflow" 触发
+  workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: "Force deploy all apps (忽略变更检测，全部构建部署)"
+        type: boolean
+        default: false
 
 env:
   NODE_VERSION: "20"
   PNPM_VERSION: "8"
 
 jobs:
+  # ============================================================
+  # 检测哪些 app 有文件变更
+  # ============================================================
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      main-app: ${{ steps.filter.outputs.main-app || steps.force.outputs.main-app }}
+      react-child-app: ${{ steps.filter.outputs.react-child-app || steps.force.outputs.react-child-app }}
+      vue-child-app: ${{ steps.filter.outputs.vue-child-app || steps.force.outputs.vue-child-app }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        if: ${{ github.event.inputs.deploy_all != 'true' }}
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            main-app:
+              - 'my-microapp/apps/main-app/**'
+              - 'my-microapp/packages/shared/**'
+            react-child-app:
+              - 'my-microapp/apps/react-child-app/**'
+              - 'my-microapp/packages/shared/**'
+            vue-child-app:
+              - 'my-microapp/apps/vue-child-app/**'
+              - 'my-microapp/packages/shared/**'
+
+      - name: Force deploy all
+        if: ${{ github.event.inputs.deploy_all == 'true' }}
+        id: force
+        run: |
+          echo "main-app=true" >> $GITHUB_OUTPUT
+          echo "react-child-app=true" >> $GITHUB_OUTPUT
+          echo "vue-child-app=true" >> $GITHUB_OUTPUT
+
+  # ============================================================
+  # 构建 + 部署（单 job，按需构建对应 app）
+  # ============================================================
   build-and-deploy:
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.main-app == 'true' ||
+      needs.detect-changes.outputs.react-child-app == 'true' ||
+      needs.detect-changes.outputs.vue-child-app == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -36,8 +85,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build all apps
-        run: pnpm build
+      # ── 按需构建 ──
+      - name: Build main-app
+        if: needs.detect-changes.outputs.main-app == 'true'
+        run: pnpm --filter main-app build
+
+      - name: Build react-child-app
+        if: needs.detect-changes.outputs.react-child-app == 'true'
+        run: pnpm --filter react-child-app build
+
+      - name: Build vue-child-app
+        if: needs.detect-changes.outputs.vue-child-app == 'true'
+        run: pnpm --filter vue-child-app build
 
       # ── 部署 ──
       - name: Configure SSH
@@ -48,6 +107,7 @@ jobs:
           ssh-keyscan -p ${{ env.DEPLOY_PORT }} -H ${{ env.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy main-app
+        if: needs.detect-changes.outputs.main-app == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo mkdir -p ${{ env.DEPLOY_PATH }}/main-app"
@@ -55,6 +115,7 @@ jobs:
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/main-app/
 
       - name: Deploy react-child-app
+        if: needs.detect-changes.outputs.react-child-app == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo mkdir -p ${{ env.DEPLOY_PATH }}/react-child-app"
@@ -62,6 +123,7 @@ jobs:
             ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/react-child-app/
 
       - name: Deploy vue-child-app
+        if: needs.detect-changes.outputs.vue-child-app == 'true'
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "sudo mkdir -p ${{ env.DEPLOY_PATH }}/vue-child-app"
