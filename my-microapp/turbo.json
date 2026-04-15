@@ -3,7 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "!packages/shared/dist/**"]
     },
     "type-check": {
       "dependsOn": ["^type-check"]
