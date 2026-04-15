@@ -1,0 +1,89 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [master]
+
+env:
+  NODE_VERSION: "18"
+  PNPM_VERSION: "8"
+
+  # ── 自建 Remote Cache 配置 ──
+  # Turborepo 通过这两个环境变量连接你的腾讯云缓存服务
+  TURBO_API: ${{ secrets.TURBO_API }}          # 例如 http://你的服务器IP:4000
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}       # 缓存服务的 CACHE_TOKEN
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/usr/share/nginx/html' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # turbo 需要完整 git 历史做增量判断
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Turborepo 增量构建 ──
+      # turbo 自动判断哪些包需要重建，其余从远程缓存恢复
+      # 不再需要 paths-filter 手动检测变更！
+      - name: Build (incremental)
+        run: pnpm build
+        # 输出日志会显示 CACHE HIT / FULL BUILD
+
+      - name: Type check
+        run: pnpm type-check
+
+      # ── 部署 ──
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ env.DEPLOY_PORT }} -H ${{ env.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy main-app
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            "sudo mkdir -p ${{ env.DEPLOY_PATH }}/main-app"
+          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./apps/main-app/dist/* \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/main-app/
+
+      - name: Deploy react-child-app
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            "sudo mkdir -p ${{ env.DEPLOY_PATH }}/react-child-app"
+          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./apps/react-child-app/dist/* \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/react-child-app/
+
+      - name: Deploy vue-child-app
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            "sudo mkdir -p ${{ env.DEPLOY_PATH }}/vue-child-app"
+          scp -i ~/.ssh/deploy_key -P ${{ env.DEPLOY_PORT }} -r ./apps/vue-child-app/dist/* \
+            ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/vue-child-app/
+
+      - name: Reload nginx
+        if: success()
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ env.DEPLOY_PORT }} ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            "sudo nginx -s reload"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

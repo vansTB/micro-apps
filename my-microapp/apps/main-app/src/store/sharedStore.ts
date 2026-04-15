@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import { useStore } from 'zustand'
-import type { SharedStore } from '../../../shared'
+import type { SharedStore } from '@my-microapp/shared'
 
 /**
  * 用 vanilla 模式创建 store —— 不依赖任何 React，是纯 JS 对象。

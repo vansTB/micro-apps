@@ -2,18 +2,22 @@
   "name": "my-microapp",
   "private": true,
   "version": "1.0.0",
+  "packageManager": "pnpm@10.33.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm -r --parallel --filter ./apps/* dev",
-    "build": "pnpm -r --filter ./apps/* build",
-    "dev:main-app": "pnpm --filter main-app dev",
-    "dev:react-child-app": "pnpm --filter react-child-app dev",
-    "dev:vue-child-app": "pnpm --filter vue-child-app dev",
-    "build:main-app": "pnpm --filter main-app build",
-    "build:react-child-app": "pnpm --filter react-child-app build",
-    "build:vue-child-app": "pnpm --filter vue-child-app build"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "type-check": "turbo run type-check",
+    "lint": "turbo run lint",
+    "dev:main-app": "turbo run dev --filter=main-app",
+    "dev:react-child-app": "turbo run dev --filter=react-child-app",
+    "dev:vue-child-app": "turbo run dev --filter=vue-child-app",
+    "build:main-app": "turbo run build --filter=main-app",
+    "build:react-child-app": "turbo run build --filter=react-child-app",
+    "build:vue-child-app": "turbo run build --filter=vue-child-app"
   },
   "devDependencies": {
-    "pnpm": "^8.0.0"
+    "pnpm": "^8.0.0",
+    "turbo": "^2.9.6"
   }
 }
