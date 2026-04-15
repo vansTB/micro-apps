@@ -1,16 +1,11 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import UserList from './pages/UserList';
-import UserDetail from './pages/UserDetail';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import Dashboard from './pages/Dashboard'
+import UserList from './pages/UserList'
+import UserDetail from './pages/UserDetail'
 
-interface AppProps {
-  props?: any;
-}
-
-function App({ props }: AppProps) {
-  //根据是否在乾坤环境下确定basename
-  const isQiankun = (window as any).__POWERED_BY_QIANKUN__;
-  const basename = isQiankun ? '/react-child' : '/';
+function App() {
+  const isQiankun = (window as any).__POWERED_BY_QIANKUN__ || (window as any).proxy
+  const basename = isQiankun ? '/react-child' : '/'
 
   return (
     <BrowserRouter basename={basename}>
@@ -21,13 +16,13 @@ function App({ props }: AppProps) {
         </nav>
 
         <Routes>
-          <Route path="/" element={<Dashboard props={props} />} />
+          <Route path="/" element={<Dashboard />} />
           <Route path="/user-list" element={<UserList />} />
-          <Route path="/user-detail/:id" element={<UserDetail props={props} />} />
+          <Route path="/user-detail/:id" element={<UserDetail />} />
         </Routes>
       </div>
     </BrowserRouter>
-  );
+  )
 }
 
-export default App;
+export default App

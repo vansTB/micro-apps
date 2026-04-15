@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import { setSharedStoreFromProps } from './hooks/useSharedStore'
 
 let root: ReactDOM.Root | null = null
 
@@ -11,20 +12,13 @@ export async function bootstrap() {
 export async function mount(props: any) {
   console.log('[react-child-app] mount', props)
 
-  if (props.onGlobalStateChange) {
-    props.onGlobalStateChange((state: any) => {
-      console.log('[react-child-app] received state from main:', state)
-    }, true)
+  // 从 qiankun props 获取主应用下发的 vanilla store（纯 JS，不含 React）
+  if (props.sharedStore) {
+    setSharedStoreFromProps(props.sharedStore)
   }
 
-  if (props.setGlobalState) {
-    props.setGlobalState({
-      fromReactChild: 'hello from react-child-app',
-      timestamp: Date.now(),
-    })
-  }
-
-  // Use props.container (qiankun-provided) or fallback to document #root
+  // In qiankun mode, render into the container provided by qiankun
+  // In standalone mode, render into document #root
   const container = props.container
     ? props.container.querySelector('#root') || props.container
     : document.getElementById('root')
@@ -33,7 +27,7 @@ export async function mount(props: any) {
     root = ReactDOM.createRoot(container)
     root.render(
       <React.StrictMode>
-        <App {...props} />
+        <App />
       </React.StrictMode>
     )
   }

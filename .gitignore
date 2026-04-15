@@ -1,6 +1,7 @@
 # compiled output
 /dist
 /min
+/node_modules
 /my-microapp/node_modules
 /my-microapp/apps/*/node_modules/
 /var

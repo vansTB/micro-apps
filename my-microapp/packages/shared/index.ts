@@ -21,21 +21,41 @@ export const APP_PORTS = {
   VUE_CHILD: 3002
 } as const;
 
-// 事件名称
-export const EVENTS = {
-  STATE_CHANGE: 'global_state_change',
-  ROUTE_CHANGE: 'route_change'
-} as const;
+// ============================================================
+// Zustand 共享 Store 定义
+// ============================================================
 
-// 初始全局状态
-export interface GlobalState {
-  user: { id: string; name: string } | null;
+/** 全局共享状态类型 */
+export interface SharedState {
+  /** 当前用户信息 */
+  user: { id: string; name: string; role: string } | null;
+  /** 主题 */
   theme: 'light' | 'dark';
-  fromChild: string | null;
+  /** 消息列表（用于父子/兄弟应用通信演示） */
+  messages: Message[];
 }
 
-export const INITIAL_STATE: GlobalState = {
+/** 通信消息 */
+export interface Message {
+  id: string;
+  from: string;
+  content: string;
+  timestamp: number;
+}
+
+/** Store actions */
+export interface SharedActions {
+  setUser: (user: SharedState['user']) => void;
+  setTheme: (theme: SharedState['theme']) => void;
+  addMessage: (from: string, content: string) => void;
+  clearMessages: () => void;
+}
+
+export type SharedStore = SharedState & SharedActions;
+
+/** 初始状态 */
+export const INITIAL_SHARED_STATE: SharedState = {
   user: null,
   theme: 'light',
-  fromChild: null
+  messages: [],
 };

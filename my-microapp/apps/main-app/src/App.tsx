@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import { initQiankun } from './qiankun'
-import { MicroApp } from './qiankun/MicroApp'
 
 // Initialize qiankun
 initQiankun()
@@ -13,14 +12,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route
-            path="react-child/*"
-            element={<MicroApp name="react-child-app" url="//localhost:3001" />}
-          />
-          <Route
-            path="vue-child/*"
-            element={<MicroApp name="vue-child-app" url="//localhost:3002" />}
-          />
+          {/* Child routes handled by qiankun registerMicroApps */}
+          <Route path="react-child/*" element={<div />} />
+          <Route path="vue-child/*" element={<div />} />
         </Route>
       </Routes>
     </BrowserRouter>

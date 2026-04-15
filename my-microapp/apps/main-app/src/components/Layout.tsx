@@ -20,8 +20,9 @@ function Layout() {
           Vue Child App
         </Link>
       </nav>
-      <main id="subapp-container" style={{ padding: '24px' }}>
+      <main style={{ padding: '24px' }}>
         <Outlet />
+        <div id="subapp-container" />
       </main>
     </div>
   )
